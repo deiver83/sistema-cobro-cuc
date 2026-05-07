@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA DE GESTIÓN - Panel de Control</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root {
+            --blue: #007bff; --green: #28a745; --purple: #6f42c1;
+            --cyan: #17a2b8; --red: #dc3545; --orange: #fd7e14;
+            --dark: #343a40;
+        }
+
+        body { background: #f4f7f6; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; margin-top: 20px;
+        }
+
+        .card-stat {
+            background: white; padding: 25px; border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .card-stat:hover { transform: translateY(-5px); }
+        .card-stat h3 { font-size: 0.85rem; color: #6c757d; margin-bottom: 15px; letter-spacing: 1px; font-weight: 600; }
+        .amount { font-size: 1.6rem; font-weight: 800; }
+
+        .border-blue { border-top: 6px solid var(--blue); }
+        .border-green { border-top: 6px solid var(--green); }
+        .border-purple { border-top: 6px solid var(--purple); }
+        .border-cyan { border-top: 6px solid var(--cyan); }
+        .border-red { border-top: 6px solid var(--red); }
+        .border-orange { border-top: 6px solid var(--orange); }
+
+        .text-blue { color: var(--blue); } .text-green { color: var(--green); }
+        .text-purple { color: var(--purple); } .text-cyan { color: var(--cyan); }
+        .text-red { color: var(--red); } .text-orange { color: var(--orange); }
+
+        /* Estilo para los botones de navegación */
+        .nav-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-top: 20px; 
+        }
+
+        .nav-card {
+            padding: 25px; border: none; border-radius: 12px;
+            color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .nav-card:hover { transform: translateY(-3px); filter: brightness(1.1); }
+
+        .bg-blue { background-color: var(--blue); }
+        .bg-green { background-color: var(--green); }
+        .bg-dark { background-color: var(--dark); }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #212529; color: white; }
+        .btn-red { background: var(--red); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 style="margin:0; font-size: 1.4rem;">SISTEMA DE GESTIÓN</h1>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="text-align: right;">
+                <div id="userName" style="font-weight: bold; color: #3b82f6; font-size: 1rem;"></div>
+                <div id="userEmail" style="font-weight: 300; font-size: 0.8rem; opacity: 0.7;"></div>
+            </div>
+            <button class="btn-red" onclick="cerrarSesion()">Cerrar Sesión</button>
+        </div>
+    </header>
+
+    <div class="container" style="padding: 30px;">
+        <h2 style="color: #343a40; margin-bottom: 25px; font-weight: 700;">Resumen Financiero</h2>
+        
+        <div class="dashboard-grid">
+            <div class="card-stat border-blue">
+                <h3>CAPITAL PRESTADO</h3>
+                <div class="amount text-blue" id="capPrestado">$ 0</div>
+            </div>
+            <div class="card-stat border-green">
+                <h3>INTERESES A GANAR</h3>
+                <div class="amount text-green" id="intGanar">$ 0</div>
+            </div>
+            <div class="card-stat border-purple">
+                <h3>TOTAL A RECUPERAR</h3>
+                <div class="amount text-purple" id="totalRecuperar">$ 0</div>
+            </div>
+            <div class="card-stat border-cyan">
+                <h3>TOTAL COBRADO</h3>
+                <div class="amount text-cyan" id="totalCobrado">$ 0</div>
+            </div>
+            <div class="card-stat border-red">
+                <h3>FALTA POR COBRAR</h3>
+                <div class="amount text-red" id="faltaCobrar">$ 0</div>
+            </div>
+            <div class="card-stat border-orange">
+                <h3>PRÉSTAMOS ACTIVOS</h3>
+                <div class="amount text-orange" id="prestamosActivos">0</div>
+            </div>
+        </div>
+
+        <div style="background: white; margin-top: 40px; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem; color: #495057;">Navegación Rápida</h3>
+            <div class="nav-container">
+                <button class="nav-card bg-blue" onclick="location.href='clientes.html'">👥 Gestionar Clientes</button>
+                <button class="nav-card bg-green" onclick="location.href='prestamos.html'">💰 Control de Préstamos</button>
+                <button class="nav-card bg-dark" onclick="location.href='resumen.html'">📋 Historial de Pagos</button>
+            </div>
+        </div>
+    </div>
+
+  <script>
+    const usuarioData = JSON.parse(localStorage.getItem('usuario'));
+
+    if (!usuarioData || !usuarioData.id) {
+        location.href = 'index.html';
+    }
+
+    // Ruta base del API
+    const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+    
+    // Formateador de moneda colombiana
+    const fmt = (n) => new Intl.NumberFormat('es-CO', { 
+        style: 'currency', 
+        currency: 'COP', 
+        minimumFractionDigits: 0 
+    }).format(n || 0);
+
+    async function cargarDashboard() {
+        try {
+            // Mostrar info del usuario
+            document.getElementById('userName').innerText = usuarioData.nombre_completo || 'Usuario';
+            document.getElementById('userEmail').innerText = usuarioData.email || '';
+
+            // 1. LLAMADA ÚNICA A ESTADÍSTICAS (La ruta que suma el historial real)
+            const response = await fetch(`${API_BASE}/cuotas/estadisticas/resumen?usuarioId=${usuarioData.id}`);
+            if (!response.ok) throw new Error("Error al obtener estadísticas");
+            
+            const stats = await response.json();
+
+            // 2. ACTUALIZAR LOS CUADROS CON LOS DATOS DEL SERVIDOR
+            document.getElementById('capPrestado').innerText = fmt(stats.total_capital);
+            document.getElementById('intGanar').innerText = fmt(stats.total_intereses);
+            document.getElementById('totalRecuperar').innerText = fmt(stats.total_recuperar);
+            
+            // Aquí ya no saldrá en cero porque viene de historial_pagos
+            document.getElementById('totalCobrado').innerText = fmt(stats.total_cobrado);
+            
+            document.getElementById('faltaCobrar').innerText = fmt(stats.falta_cobrar);
+            document.getElementById('prestamosActivos').innerText = stats.prestamos_activos;
+
+        } catch (error) {
+            console.error("Error cargando el dashboard:", error);
+            // En caso de error, resetear a ceros para evitar confusión
+            document.querySelectorAll('.amount').forEach(el => {
+                if(el.id !== 'prestamosActivos') el.innerText = fmt(0);
+                else el.innerText = '0';
+            });
+        }
+    }
+
+    function cerrarSesion() {
+        localStorage.clear();
+        location.href = 'index.html';
+    }
+
+    // Cargar datos al iniciar
+    window.onload = cargarDashboard;
+</script>
+
+</body>
+</html>

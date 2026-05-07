@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Contable | Sistema de Gestión</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root { --blue: #007bff; --green: #28a745; --red: #dc3545; --dark: #343a40; --black: #111; }
+        body { background: #f4f7f6; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 120px; }
+        header { background: #212529; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .container { padding: 20px; max-width: 100%; margin: 0 auto; }
+        
+        .acciones-historial { margin-bottom: 15px; display: flex; gap: 10px; }
+        .btn-accion { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-del-sel { background: var(--red); }
+        .btn-del-all { background: var(--black); }
+        .btn-accion:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .col-check { width: 4%; }
+        .col-fecha { width: 10%; }
+        .col-cliente { width: 14%; }
+        .col-monto { width: 13%; }
+        .col-modalidad { width: 10%; }
+        .col-interes { width: 9%; }
+        .col-cuotas { width: 10%; }
+        .col-ganancia { width: 13%; }
+        .col-deuda { width: 13%; }
+        .col-detalle { width: 4%; }
+
+        th { background: var(--dark); color: white; padding: 15px 5px; font-size: 0.7rem; text-transform: uppercase; text-align: center; border-right: 1px solid #4a4e52; }
+        td { padding: 15px 5px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .fila-cliente { cursor: pointer; transition: background 0.2s; }
+        .fila-cliente:hover { background: #f8f9ff !important; }
+        
+        .sub-tabla-container { padding: 20px; background: #fdfdfd; border-bottom: 2px solid #007bff22; }
+        .sub-tabla { width: 95% !important; margin: 0 auto; table-layout: auto !important; }
+        .sub-tabla th { background: #6c757d; font-size: 0.65rem; padding: 8px; border: none; }
+        .sub-tabla td { padding: 8px; font-size: 0.75rem; border-bottom: 1px solid #f0f0f0; background: white; }
+
+        .txt-ganancia { color: var(--green); font-weight: bold; }
+        .txt-deuda { color: var(--red); font-weight: bold; }
+        
+        .barra-suma {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--blue); color: white; padding: 15px;
+            display: flex; justify-content: space-around; align-items: center;
+            font-size: 1.2rem; font-weight: bold;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.2); z-index: 1000;
+        }
+
+        .seccion-suma { display: flex; flex-direction: column; align-items: center; }
+        .label-suma { font-size: 0.7rem; opacity: 0.9; text-transform: uppercase; margin-bottom: 4px; }
+        
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; color: white; font-weight: bold; }
+        .bg-pagado { background: var(--green); }
+        .bg-pendiente { background: #ffc107; color: #856404; }
+
+        .btn-expand { background: #eef2f7; border: none; padding: 5px; border-radius: 4px; color: var(--blue); cursor: pointer; width: 30px; }
+        .detalle-cuotas { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>RESUMEN CONSOLIDADO</h2>
+        <button onclick="location.href='dashboard.html'" style="background:var(--blue); color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Volver</button>
+    </header>
+
+    <div class="container">
+        <div class="acciones-historial">
+            <button class="btn-accion btn-del-sel" onclick="limpiarHistorial(false)">Borrar Seleccionados</button>
+            <button class="btn-accion btn-del-all" onclick="limpiarHistorial(true)">Vaciar Todo el Historial</button>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-check"><input type="checkbox" id="masterCheck" onclick="seleccionarTodo()"></th>
+                        <th class="col-fecha">Fecha Crédito</th>
+                        <th class="col-cliente">Cliente</th>
+                        <th class="col-monto">Capital Prestado</th>
+                        <th class="col-modalidad">Modalidad</th>
+                        <th class="col-interes">Interés (%)</th>
+                        <th class="col-cuotas">Cuotas (P/T)</th>
+                        <th class="col-ganancia">Interés Generado</th>
+                        <th class="col-deuda">Deuda Pendiente</th>
+                        <th class="col-detalle"></th> 
+                    </tr>
+                </thead>
+                <tbody id="tablaResumen">
+                    <tr><td colspan="10">Cargando datos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="barra-suma">
+        <div class="seccion-suma">
+            <span class="label-suma">Capital Seleccionado</span>
+            <span id="totalSuma">$ 0</span>
+        </div>
+        <div style="width: 1px; height: 35px; background: rgba(255,255,255,0.3);"></div>
+        <div class="seccion-suma">
+            <span class="label-suma">Interés Generado Seleccionado</span>
+            <span id="totalGanancia" style="color: #afffaf;">$ 0</span>
+        </div>
+    </div>
+
+    <script>
+        const usuarioData = JSON.parse(localStorage.getItem('usuario'));
+        const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+        const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
+
+        async function cargar() {
+            try {
+                if (!usuarioData || !usuarioData.id) return;
+                
+                const tabla = document.getElementById('tablaResumen');
+                tabla.innerHTML = ''; 
+
+                const res = await fetch(`${API_BASE}/prestamos?usuarioId=${usuarioData.id}&historial=true`);
+                const prestamos = await res.json();
+
+                if (prestamos.length === 0) {
+                    tabla.innerHTML = '<tr><td colspan="10" style="text-align:center;">No hay préstamos registrados</td></tr>';
+                    return;
+                }
+
+                prestamos.forEach(p => {
+                    const importe = parseFloat(p.monto || 0);
+                    const totalPagar = parseFloat(p.total_pagar || 0);
+                    const totalAbonado = parseFloat(p.total_abonado || 0); 
+                    const interesTotal = totalPagar - importe;
+                    const cuotasTotales = p.cuotas_totales || 1;
+                    const gananciaInteresReal = interesTotal * (p.cuotas_pagadas / cuotasTotales);
+                    const deudaActual = totalPagar - totalAbonado;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'fila-cliente';
+                    if(p.estado_visibilidad === 'historial') tr.style.opacity = '0.6';
+
+                    tr.innerHTML = `
+                        <td class="col-check" onclick="event.stopPropagation();">
+                            <input type="checkbox" class="item-check" value="${p.id}" data-monto="${importe}" data-ganancia="${gananciaInteresReal}" onclick="sumarSeleccion()">
+                        </td>
+                        <td class="col-fecha" onclick="toggleDetalle(${p.id})">${new Date(p.fecha_inicio).toLocaleDateString()}</td>
+                        <td class="col-cliente" onclick="toggleDetalle(${p.id})" style="text-transform: capitalize; font-weight: bold; color: var(--blue);">${p.cliente_nombre}</td>
+                        <td class="col-monto" onclick="toggleDetalle(${p.id})" style="font-weight:bold;">${fmt(importe)}</td>
+                        <td class="col-modalidad" onclick="toggleDetalle(${p.id})">${p.modalidad}</td>
+                        <td class="col-interes" onclick="toggleDetalle(${p.id})">${p.tasa_interes}%</td>
+                        <td class="col-cuotas" onclick="toggleDetalle(${p.id})" style="font-weight: bold;">${p.cuotas_pagadas} / ${p.cuotas_totales}</td> 
+                        <td class="col-ganancia txt-ganancia" onclick="toggleDetalle(${p.id})">+ ${fmt(gananciaInteresReal)}</td>
+                        <td class="col-deuda txt-deuda" onclick="toggleDetalle(${p.id})">${fmt(deudaActual)}</td>
+                        <td class="col-detalle" onclick="toggleDetalle(${p.id})"><button class="btn-expand">▼</button></td>
+                    `;
+                    tabla.appendChild(tr);
+
+                    const trDetalle = document.createElement('tr');
+                    trDetalle.id = `detalle-${p.id}`;
+                    trDetalle.className = 'detalle-cuotas';
+                    trDetalle.innerHTML = `<td colspan="10"><div class="sub-tabla-container" id="contenedor-${p.id}"></div></td>`;
+                    tabla.appendChild(trDetalle);
+                });
+
+            } catch (error) { 
+                console.error("Error al cargar datos:", error); 
+                document.getElementById('tablaResumen').innerHTML = '<tr><td colspan="10">Error de servidor</td></tr>';
+            }
+        }
+
+        async function toggleDetalle(prestamoId) {
+            const fila = document.getElementById(`detalle-${prestamoId}`);
+            const contenedor = document.getElementById(`contenedor-${prestamoId}`);
+            const btn = fila.previousElementSibling?.querySelector('.btn-expand');
+            
+            if (!fila || !btn) return;
+
+            if (fila.style.display === 'table-row') {
+                fila.style.display = 'none';
+                btn.innerText = '▼';
+            } else {
+                fila.style.display = 'table-row';
+                btn.innerText = '▲';
+                if (contenedor.dataset.cargado) return;
+                try {
+                    // SE CORRIGE LA RUTA PARA USAR EL FILTRO DEL BACKEND
+                    const res = await fetch(`${API_BASE}/prestamos/cuotas/${prestamoId}`);
+                    const cuotas = await res.json();
+                    
+                    let html = `<table class="sub-tabla">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>VENCIMIENTO</th>
+                                <th>FECHA PAGO</th>
+                                <th>VALOR CUOTA</th>
+                                <th>ABONADO</th>
+                                <th>SALDO</th>
+                                <th>ESTADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    
+                    cuotas.forEach(c => {
+                        let clase = c.estado === 'pagado' ? 'bg-pagado' : 'bg-pendiente';
+                        
+                        // LÓGICA DE SEGURIDAD FRONTEND: 
+                        // Si el abono es 0, forzamos que la fecha sea '---' sin importar la base de datos
+                        let fechaCobro = (parseFloat(c.valor_pagado) > 0 && c.fecha_pago_real) 
+                                         ? new Date(c.fecha_pago_real).toLocaleDateString() 
+                                         : '---';
+                        
+                        html += `<tr>
+                            <td>Cuota ${c.numero_cuota}</td>
+                            <td>${new Date(c.fecha_vencimiento).toLocaleDateString()}</td>
+                            <td style="font-weight:bold; color:#007bff;">${fechaCobro}</td>
+                            <td>${fmt(c.valor_cuota)}</td>
+                            <td style="color:var(--green)">${fmt(c.valor_pagado)}</td>
+                            <td style="color:var(--red)">${fmt(c.saldo_pendiente)}</td>
+                            <td><span class="badge ${clase}">${c.estado.toUpperCase()}</span></td>
+                        </tr>`;
+                    });
+                    
+                    contenedor.innerHTML = html + `</tbody></table>`;
+                    contenedor.dataset.cargado = "true";
+                } catch(e) { contenedor.innerHTML = "No hay detalles disponibles."; }
+            }
+        }
+
+        function sumarSeleccion() {
+            let m = 0, g = 0;
+            document.querySelectorAll('.item-check:checked').forEach(chk => {
+                m += parseFloat(chk.dataset.monto || 0);
+                g += parseFloat(chk.dataset.ganancia || 0);
+            });
+            document.getElementById('totalSuma').innerText = fmt(m);
+            document.getElementById('totalGanancia').innerText = fmt(g);
+        }
+
+        function seleccionarTodo() {
+            const m = document.getElementById('masterCheck');
+            document.querySelectorAll('.item-check').forEach(chk => chk.checked = m.checked);
+            sumarSeleccion();
+        }
+
+        async function limpiarHistorial(todo = false) {
+            let ids = [];
+            if (todo) {
+                if (!confirm("¿Deseas vaciar TODO el historial permanentemente?")) return;
+                const checks = document.querySelectorAll('.item-check');
+                ids = Array.from(checks).map(cb => cb.value);
+            } else {
+                const seleccionados = document.querySelectorAll('.item-check:checked');
+                ids = Array.from(seleccionados).map(cb => cb.value);
+                if (ids.length === 0) return alert("Selecciona al menos un registro");
+                if (!confirm(`¿Eliminar permanentemente los ${ids.length} registros seleccionados?`)) return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/prestamos/borrar-definitivo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids })
+                });
+
+                if (res.ok) {
+                    alert("🗑️ Registros eliminados y saldos actualizados");
+                    // RECARGA COMPLETA FORZADA PARA LIMPIAR MEMORIA
+                    window.location.reload(true); 
+                }
+            } catch (error) { alert("Error de conexión"); }
+        }
+
+        window.onload = cargar;
+    </script>
+</body>
+</html>

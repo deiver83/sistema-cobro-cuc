@@ -1,0 +1,1 @@
+const API_BASE = "https://tu-proyecto-backend.onrender.com/api";

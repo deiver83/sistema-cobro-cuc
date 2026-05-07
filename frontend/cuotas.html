@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Cuotas | Sistema de Gestión</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #212529;
+            --light-bg: #f4f7f6;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark);
+        }
+
+        header {
+            background: var(--dark);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            padding: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            color: var(--dark);
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .btn-confirm {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-confirm:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #666;
+            text-align: center;
+            padding: 15px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid #eee;
+        }
+
+        td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .PAGADO { background: #d4edda; color: #155724; }
+        .PENDIENTE { background: #fff3cd; color: #856404; }
+
+        .monto-pagado { color: var(--success); font-weight: bold; }
+        .monto-pendiente { color: var(--danger); font-weight: bold; }
+
+        .btn-revertir {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 style="margin:0; font-size: 1.4rem;">Sistema de Gestión</h1>
+        <button onclick="location.href='prestamos.html'" style="background:var(--primary); color:white; border:none; padding:8px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Volver a Préstamos</button>
+    </header>
+
+    <div class="container">
+        <h2>Control de Cuotas</h2>
+
+        <div class="card">
+            <h3>Registrar Pago de Cuota</h3>
+            <form id="formPago" class="form-grid">
+                <div>
+                    <label>Seleccione la cuota a pagar</label>
+                    <select id="selectCuota" required>
+                        <option value="">Cargando cuotas...</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Monto a abonar</label>
+                    <input type="text" id="montoAbono" placeholder="Ej: 175.000" required>
+                </div>
+                <button type="submit" class="btn-confirm">CONFIRMAR PAGO</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Detalle de Cuotas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° de Cuota</th>
+                        <th>Vencimiento</th>
+                        <th>Valor Cuota</th>
+                        <th>Abonado</th>
+                        <th>Pendiente</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="listaCuotas">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const prestamoId = urlParams.get('id');
+        const socket = io('https://tu-app-en-render.onrender.com');
+
+        const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
+
+        async function cargarCuotas() {
+            try {
+                const res = await fetch(`${API}/${prestamoId}`);
+                const cuotas = await res.json();
+                
+                const tabla = document.getElementById('listaCuotas');
+                const select = document.getElementById('selectCuota');
+                
+                tabla.innerHTML = '';
+                select.innerHTML = '<option value="">Seleccione una cuota</option>';
+
+                cuotas.forEach(c => {
+                    tabla.innerHTML += `
+                        <tr>
+                            <td style="font-weight: bold;">Cuota ${c.numero_cuota}</td>
+                            <td>${new Date(c.fecha_vencimiento).toLocaleDateString()}</td>
+                            <td>${fmt(c.valor_cuota)}</td>
+                            <td class="monto-pagado">${fmt(c.valor_pagado)}</td>
+                            <td class="monto-pendiente">${fmt(c.saldo_pendiente)}</td>
+                            <td><span class="badge ${c.estado.toUpperCase()}">${c.estado.toUpperCase()}</span></td>
+                            <td>
+                                <button class="btn-revertir" onclick="revertir(${c.id})">Eliminar Pago</button>
+                            </td>
+                        </tr>
+                    `;
+
+                    if (c.estado !== 'pagado') {
+                        select.innerHTML += `<option value="${c.id}">Cuota ${c.numero_cuota} - Pendiente: ${fmt(c.saldo_pendiente)}</option>`;
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('formPago').onsubmit = async (e) => {
+            e.preventDefault();
+            const cuotaId = document.getElementById('selectCuota').value;
+            
+            // LIMPIEZA DE PUNTOS: Si escribes 840.000 se convierte en 840000
+            let montoValor = document.getElementById('montoAbono').value;
+            const montoLimpio = montoValor.replace(/\./g, '');
+
+            const res = await fetch(`${API}/pagar`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ cuotaId, monto: montoLimpio })
+            });
+
+            if(res.ok) {
+                alert("✅ Pago registrado con éxito");
+                document.getElementById('montoAbono').value = '';
+                cargarCuotas();
+            } else {
+                alert("❌ Error al registrar el pago");
+            }
+        };
+
+        async function revertir(id) {
+            if(confirm("¿Estás seguro de que deseas eliminar los pagos de esta cuota?")) {
+                await fetch(`${API}/revertir/${id}`, { method: 'PUT' });
+                cargarCuotas();
+            }
+        }
+
+        if(prestamoId) cargarCuotas();
+    </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Préstamos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .activo { background: #d4edda; color: #155724; }
+        .inactivo { background: #f8d7da; color: #721c24; }
+        .display-box { background: #f1f3f5; padding: 15px; border-radius: 5px; border-left: 5px solid #007bff; margin-top: 10px; min-height: 60px; }
+        .display-label { font-size: 0.65rem; color: #666; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; display: block; }
+        .display-amount { font-size: 1.3rem; font-weight: bold; color: #007bff; }
+        .btn-edit { background: #ffc107; color: #212529; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #212529; color: white;">
+        <h1 style="font-size: 1.2rem; margin: 0;">Gestión de Préstamos</h1>
+        <div>
+            <button class="btn-blue" onclick="location.href='dashboard.html'" style="background:#007bff; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Volver al Inicio</button>
+            <button class="btn-red" onclick="cerrarSesion()" style="background:#dc3545; color:white; padding:8px 15px; border-radius:4px; cursor:pointer; margin-left: 10px;">Cerrar Sesión</button>
+        </div>
+    </header>
+
+    <div class="container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+        <div class="card-admin" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 id="tituloForm">Crear nuevo préstamo</h3>
+            <form id="formP">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                    <div><label style="display:block;">Cliente</label><select id="cli" style="width:100%; padding:8px;" required></select></div>
+                    <div><label style="display:block;">Monto</label><input type="text" id="mon" style="width:100%; padding:8px;" placeholder="Ej: 200.000" required></div>
+                    <div><label style="display:block;">Interés (%)</label><input type="number" id="int" style="width:100%; padding:8px;" placeholder="Ej: 40" required></div>
+                    <div><label style="display:block;">Modalidad</label>
+                        <select id="mod" style="width:100%; padding:8px;">
+                            <option value="diario">Diario</option>
+                            <option value="semanal">Semanal</option>
+                            <option value="quincenal">Quincenal</option>
+                            <option value="mensual">Mensual</option>
+                        </select>
+                    </div>
+                    <div><label style="display:block;">Cuotas</label><input type="number" id="cuo" style="width:100%; padding:8px;" placeholder="Ej: 4" required></div>
+                    <div><label style="display:block;">Fecha inicio</label><input type="date" id="fec" style="width:100%; padding:8px;" required></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div class="display-box"><span class="display-label">TOTAL A PAGAR</span><div id="t_pag" class="display-amount">$ 0</div></div>
+                    <div class="display-box" style="border-left-color: #28a745;"><span class="display-label">IMPORTE POR CUOTA</span><div id="t_cuo" class="display-amount" style="color: #28a745;">$ 0</div></div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" id="btnSubmit" class="btn-blue" style="flex: 2; padding: 12px; font-weight: bold; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">Guardar Préstamo</button>
+                    <button type="button" id="btnCancelar" onclick="cancelarEdicion()" style="display:none; flex: 1; padding: 12px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-admin" style="margin-top: 25px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow-x: auto;">
+            <table class="tabla-azul" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #007bff; color: white;">
+                        <th style="padding:10px;">N°</th><th style="padding:10px;">Cliente</th><th style="padding:10px;">Monto</th><th style="padding:10px;">Interés</th><th style="padding:10px;">Modalidad</th><th style="padding:10px;">Cuotas (P/T)</th><th style="padding:10px;">Total</th><th style="padding:10px;">Estado</th><th style="padding:10px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="listaP" style="text-align: center;"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const usuarioData = JSON.parse(localStorage.getItem('usuario'));
+        if (!usuarioData || !usuarioData.id) location.href = 'index.html';
+
+        const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+        const fmt = (n) => parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 });
+
+        let editandoId = null;
+
+        async function cargar() {
+            try {
+                const res = await fetch(`${API}?usuarioId=${usuarioData.id}`);
+                const data = await res.json();
+                const body = document.getElementById('listaP');
+                body.innerHTML = '';
+                
+                if (!data.length) {
+                    body.innerHTML = '<tr><td colspan="9" style="padding:20px;">No tienes préstamos registrados.</td></tr>';
+                    return;
+                }
+
+                data.forEach((p, index) => {
+                    const btnColor = p.estado === 'activo' ? '#dc3545' : '#28a745';
+                    const btnTexto = p.estado === 'activo' ? 'Desactivar' : 'Activar';
+                    
+                    // Usamos las cuotas dinámicas calculadas en el backend
+                    const cuotasInfo = `${p.cuotas_pagadas || 0} / ${p.cuotas_totales || p.cantidad_cuotas}`;
+
+                    body.innerHTML += `<tr>
+                        <td style="padding:10px; font-weight: bold;">${index + 1}</td> 
+                        <td style="padding:10px;">${p.cliente_nombre}</td>
+                        <td style="padding:10px;">$${fmt(p.monto)}</td>
+                        <td style="padding:10px;">${p.tasa_interes}%</td>
+                        <td style="padding:10px; text-transform: capitalize;">${p.modalidad}</td>
+                        <td style="padding:10px; font-weight: bold; color: #007bff;">${cuotasInfo}</td>
+                        <td style="padding:10px;">$${fmt(p.total_pagar)}</td>
+                        <td style="padding:10px;"><span class="badge ${p.estado}">${p.estado}</span></td>
+                        <td style="padding:10px; display: flex; justify-content: center; gap: 5px;">
+                            <button onclick="location.href='cuotas.html?id=${p.id}'" style="padding:4px 8px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">Cuotas</button>
+                            <button class="btn-edit" onclick="prepararEdicion(${JSON.stringify(p).replace(/"/g, '&quot;')})">Editar</button>
+                            <button onclick="cambiarEstado(${p.id}, '${p.estado}')" 
+                                    style="padding:4px 8px; background:${btnColor}; color:white; border:none; border-radius:4px; cursor:pointer;">
+                                ${btnTexto}
+                            </button>
+                            <button onclick="eliminar(${p.id})" style="padding:4px 8px; background:#666; color:white; border:none; border-radius:4px; cursor:pointer;">Eliminar</button>
+                        </td>
+                    </tr>`;
+                });
+            } catch (err) { console.error("Error al cargar:", err); }
+        }
+
+        function prepararEdicion(p) {
+            editandoId = p.id;
+            document.getElementById('tituloForm').innerText = "Editando préstamo de " + p.cliente_nombre;
+            document.getElementById('btnSubmit').innerText = "Actualizar Cambios";
+            document.getElementById('btnSubmit').style.background = "#ffc107";
+            document.getElementById('btnSubmit').style.color = "black";
+            document.getElementById('btnCancelar').style.display = "block";
+
+            document.getElementById('cli').value = p.cliente_id;
+            document.getElementById('mon').value = fmt(p.monto);
+            document.getElementById('int').value = p.tasa_interes;
+            document.getElementById('mod').value = p.modalidad;
+            document.getElementById('cuo').value = p.cantidad_cuotas;
+            const fecha = new Date(p.fecha_inicio).toISOString().split('T')[0];
+            document.getElementById('fec').value = fecha;
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            calcularTotales();
+        }
+
+        function cancelarEdicion() {
+            editandoId = null;
+            document.getElementById('formP').reset();
+            document.getElementById('tituloForm').innerText = "Crear nuevo préstamo";
+            document.getElementById('btnSubmit').innerText = "Guardar Préstamo";
+            document.getElementById('btnSubmit').style.background = "#007bff";
+            document.getElementById('btnSubmit').style.color = "white";
+            document.getElementById('btnCancelar').style.display = "none";
+            document.getElementById('t_pag').innerText = "$ 0";
+            document.getElementById('t_cuo').innerText = "$ 0";
+        }
+
+        document.getElementById('formP').onsubmit = async (e) => {
+            e.preventDefault();
+            const montoLimpio = document.getElementById('mon').value.replace(/\./g, '');
+            const body = {
+                cliente_id: document.getElementById('cli').value,
+                monto: montoLimpio,
+                tasa_interes: document.getElementById('int').value,
+                modalidad: document.getElementById('mod').value,
+                cuotas: document.getElementById('cuo').value,
+                fecha_inicio: document.getElementById('fec').value,
+                usuario_id: usuarioData.id
+            };
+
+            const url = editandoId ? `${API}/${editandoId}` : API;
+            const metodo = editandoId ? 'PUT' : 'POST';
+
+            try {
+                const r = await fetch(url, { 
+                    method: metodo, 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(body) 
+                });
+
+                if(r.ok) { 
+                    alert(editandoId ? "✅ Actualizado correctamente" : "✅ Guardado correctamente"); 
+                    cancelarEdicion();
+                    cargar(); 
+                } else {
+                    const errorData = await r.json();
+                    alert("❌ Error: " + errorData.error);
+                }
+            } catch (err) { alert("Error de red"); }
+        };
+
+        function calcularTotales() {
+            let mRaw = document.getElementById('mon').value.replace(/\./g, '');
+            const m = parseFloat(mRaw) || 0;
+            const i = parseFloat(document.getElementById('int').value) || 0;
+            const c = parseInt(document.getElementById('cuo').value) || 1;
+            const total = m + (m * (i/100));
+            document.getElementById('t_pag').innerText = '$ ' + fmt(total);
+            document.getElementById('t_cuo').innerText = '$ ' + fmt(total/c);
+        }
+
+        ['mon', 'int', 'cuo'].forEach(id => {
+            document.getElementById(id).oninput = calcularTotales;
+        });
+
+        async function cambiarEstado(id, estActual) {
+            const nuevoEst = estActual === 'activo' ? 'inactivo' : 'activo';
+            const res = await fetch(`${API}/${id}/estado`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: nuevoEst })
+            });
+            if (res.ok) cargar();
+        }
+
+        async function clientes() {
+            const res = await fetch(`http://localhost:3000/api/clientes?usuarioId=${usuarioData.id}`);
+            const data = await res.json();
+            const sel = document.getElementById('cli');
+            sel.innerHTML = '<option value="">Seleccione un cliente...</option>';
+            data.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre_completo}</option>`);
+        }
+
+        // --- FUNCIÓN DE ELIMINAR ACTUALIZADA (BORRADO LÓGICO) ---
+        async function eliminar(id) {
+            if(confirm("¿Seguro que deseas quitar este préstamo de la lista? Podrás verlo en el resumen consolidado.")) { 
+                try {
+                    // Llamamos a borrar-logico para que se vaya al historial
+                    const res = await fetch(`${API}/borrar-logico/${id}`, { 
+                        method: 'PUT' 
+                    }); 
+                    if (res.ok) {
+                        alert("📂 Movido al historial correctamente");
+                        cargar(); 
+                    } else {
+                        alert("Error al intentar eliminar");
+                    }
+                } catch (e) {
+                    alert("Error de conexión");
+                }
+            }
+        }
+
+        function cerrarSesion() { localStorage.clear(); location.href = 'index.html'; }
+
+        clientes(); 
+        cargar();
+    </script>
+</body>
+</html>

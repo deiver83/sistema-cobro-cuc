@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Clientes - Sistema de Cobro</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .container { padding: 30px; max-width: 1100px; margin: 0 auto; }
+        .card-admin { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { cursor: pointer; border: none; border-radius: 5px; font-weight: bold; transition: 0.3s; }
+        .btn-main { background: #007bff; color: white; padding: 12px; width: 100%; margin-top: 15px; }
+        .btn-main:hover { background: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #007bff; color: white; padding: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+    </style>
+</head>
+<body style="background: #f4f7f6; margin: 0; font-family: sans-serif;">
+
+    <header style="background: #212529; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin:0;">Gestión de Clientes</h2>
+        <button onclick="location.href='dashboard.html'" style="background:#007bff; color:white; padding:8px 15px;">Volver al Dashboard</button>
+    </header>
+
+    <div class="container">
+        <div class="card-admin">
+            <h3>Registrar Nuevo Cliente</h3>
+            <form id="formCliente">
+                <div class="grid-inputs">
+                    <input type="text" id="doc" placeholder="Cédula / Documento" required>
+                    <input type="text" id="nom" placeholder="Nombre Completo" required>
+                    <input type="text" id="tel" placeholder="Teléfono" required>
+                    <input type="text" id="dir" placeholder="Dirección" required>
+                </div>
+                <button type="submit" class="btn-main">Crear Cliente</button>
+            </form>
+        </div>
+
+        <div class="card-admin">
+            <h3>Listado de Clientes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaClientes">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const socket = io('https://tu-app-en-render.onrender.com');
+        // Obtenemos los datos del usuario logueado
+        const usuarioLogueado = JSON.parse(localStorage.getItem('usuario'));
+
+        if (!usuarioLogueado || !usuarioLogueado.id) {
+            location.href = 'index.html';
+        }
+
+        // 1. CARGAR CLIENTES DEL USUARIO
+        async function cargarClientes() {
+            try {
+                const res = await fetch(`${API}?usuarioId=${usuarioLogueado.id}`);
+                const clientes = await res.json();
+                const tbody = document.getElementById('tablaClientes');
+                tbody.innerHTML = '';
+
+                clientes.forEach(c => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${c.documento_identidad}</td>
+                            <td>${c.nombre_completo}</td>
+                            <td>${c.telefono}</td>
+                            <td>${c.direccion}</td>
+                            <td>
+                                <button onclick="eliminarCliente(${c.id})" style="background:#dc3545; color:white; padding:5px 10px; border-radius:3px;">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error cargando clientes:", err);
+            }
+        }
+
+        // 2. CREAR NUEVO CLIENTE
+        document.getElementById('formCliente').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const datos = {
+                documento_identidad: document.getElementById('doc').value,
+                nombre_completo: document.getElementById('nom').value,
+                telefono: document.getElementById('tel').value,
+                direccion: document.getElementById('dir').value,
+                usuario_id: usuarioLogueado.id // IMPORTANTE: Enviamos el dueño
+            };
+
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+
+                if (res.ok) {
+                    alert("✅ Cliente registrado con éxito");
+                    document.getElementById('formCliente').reset();
+                    cargarClientes(); // Refrescar tabla
+                } else {
+                    const err = await res.json();
+                    alert("❌ Error: " + err.error);
+                }
+            } catch (err) {
+                alert("❌ Error de conexión");
+            }
+        };
+
+        // 3. ELIMINAR CLIENTE
+        async function eliminarCliente(id) {
+            if (confirm("¿Seguro que deseas eliminar este cliente?")) {
+                const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    cargarClientes();
+                } else {
+                    const err = await res.json();
+                    alert(err.error);
+                }
+            }
+        }
+
+        // Ejecutar al iniciar
+        cargarClientes();
+    </script>
+</body>
+</html>
