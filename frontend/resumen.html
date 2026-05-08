@@ -114,7 +114,7 @@
 
     <script>
         const usuarioData = JSON.parse(localStorage.getItem('usuario'));
-        const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+        const API_URL = "https://sistema-cobro-cuc.onrender.com/api";
         const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
 
         async function cargar() {

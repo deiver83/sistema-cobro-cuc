@@ -72,7 +72,7 @@
         const usuarioData = JSON.parse(localStorage.getItem('usuario'));
         if (!usuarioData || !usuarioData.id) location.href = 'index.html';
 
-        const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+        const API_URL = "https://sistema-cobro-cuc.onrender.com/api";
         const fmt = (n) => parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 });
 
         let editandoId = null;

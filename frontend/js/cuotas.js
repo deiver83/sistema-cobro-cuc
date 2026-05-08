@@ -1,4 +1,4 @@
-const socket = io('https://tu-app-en-render.onrender.com');
+const socket = io('https://sistema-cobro-cuc.onrender.com');
 
 // Función para mostrar con puntos: 175000 -> 175.000
 const fM = (v) => parseFloat(v || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 });

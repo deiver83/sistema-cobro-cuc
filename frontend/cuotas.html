@@ -191,7 +191,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const prestamoId = urlParams.get('id');
-        const socket = io('https://tu-app-en-render.onrender.com');
+        const socket = io('https://sistema-cobro-cuc.onrender.com');
 
         const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n);
 

@@ -2,7 +2,7 @@ async function cargarDashboard() {
     // Obtenemos el ID del usuario desde el localStorage
     const usuarioData = JSON.parse(localStorage.getItem('usuario'));
     const usuarioId = usuarioData.id;
-    const API_BASE = "https://tu-proyecto-backend.onrender.com/api";
+    const API_URL = "https://sistema-cobro-cuc.onrender.com/api";
     try {
         // 1. Llamamos a la ruta de estadísticas (esta es la clave)
         // Esta ruta debe devolver la suma real de la tabla historial_pagos
