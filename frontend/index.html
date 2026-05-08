@@ -153,9 +153,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // --- 2. CORRECCIÓN: Definición global de la URL del servidor ---
-        const API = "https://sistema-cobro-cuc.onrender.com/api";
-        const socket = io('https://sistema-cobro-cuc.onrender.com');
+        // --- URLS ACTUALIZADAS CON TU NUEVO BACKEND ---
+        const API = "https://sistema-cobro-backend-gqse.onrender.com/api";
+        const socket = io('https://sistema-cobro-backend-gqse.onrender.com');
 
         window.openModal = () => document.getElementById('authOverlay').classList.add('active');
         window.closeModal = () => location.reload();

@@ -1,5 +1,5 @@
-// Configuración de la URL de la API en Render
-const API_BASE = "https://sistema-cobro-cuc.onrender.com/api";
+// Configuración de la URL de la API con el nuevo Backend de Render
+const API_BASE = "https://sistema-cobro-backend-gqse.onrender.com/api";
 
 // Función para obtener datos (Ejemplo: Clientes)
 export async function obtenerClientes() {
@@ -13,5 +13,5 @@ export async function obtenerClientes() {
     }
 }
 
-// Puedes exportar la constante para usarla en otros archivos si es necesario
+// Exportamos la constante para que otros archivos (.js) puedan usarla
 export default API_BASE;
