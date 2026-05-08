@@ -153,7 +153,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // --- DEFINICIÓN DE URLS ---
+        // --- 2. CORRECCIÓN: Definición global de la URL del servidor ---
         const API = "https://sistema-cobro-cuc.onrender.com/api";
         const socket = io('https://sistema-cobro-cuc.onrender.com');
 
@@ -168,7 +168,6 @@
             if(step === 'phone') document.getElementById('authStepPhone').classList.remove('hidden');
         };
 
-        // --- 1. LOGIN UNIFICADO ---
         let loginPhase = 'identifier';
         let userIdentifier = '';
 
@@ -204,7 +203,6 @@
             }
         };
 
-        // --- 2. GOOGLE LOGIN ---
         const provider = new GoogleAuthProvider();
         document.getElementById('btnGoogle').onclick = async () => {
             try {
@@ -249,7 +247,6 @@
             } catch (e) { alert("Error con Google"); }
         };
 
-        // --- 3. TELÉFONO SMS ---
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {'size': 'invisible'});
         document.getElementById('btnTelefono').onclick = () => showStep('phone');
 
@@ -308,7 +305,6 @@
             }
         };
 
-        // --- 4. RECUPERACIÓN ---
         document.getElementById('btnSendForgot').onclick = async () => {
             const email = document.getElementById('forgotEmailInput').value;
             const btn = document.getElementById('btnSendForgot');
