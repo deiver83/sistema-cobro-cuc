@@ -1,1 +1,1 @@
-const API_URL = "https://sistema-cobro-cuc.onrender.com/api";
+const API_BASE = "https://sistema-cobro-cuc.onrender.com/api";
