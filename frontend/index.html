@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Cobros | Bienvenido</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* Se mantienen tus estilos originales */
         * { box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -64,14 +64,9 @@
         .link-blue:hover { text-decoration: underline; }
         .hidden { display: none !important; }
 
-        /* Estilo para la advertencia del teléfono */
         #phoneHint {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-bottom: 10px;
-            text-align: left;
-            padding-left: 5px;
-            line-height: 1.2;
+            font-size: 0.75rem; color: #6b7280; margin-bottom: 10px;
+            text-align: left; padding-left: 5px; line-height: 1.2;
         }
         #phoneHint b { color: #3b82f6; }
     </style>
@@ -157,6 +152,9 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+
+        // --- DEFINICIÓN DE URLS ---
+        const API = "https://sistema-cobro-cuc.onrender.com/api";
         const socket = io('https://sistema-cobro-cuc.onrender.com');
 
         window.openModal = () => document.getElementById('authOverlay').classList.add('active');
@@ -170,7 +168,7 @@
             if(step === 'phone') document.getElementById('authStepPhone').classList.remove('hidden');
         };
 
-        // --- 1. LOGIN UNIFICADO (MEJORADO) ---
+        // --- 1. LOGIN UNIFICADO ---
         let loginPhase = 'identifier';
         let userIdentifier = '';
 
@@ -185,7 +183,7 @@
                 if(!userIdentifier) return alert("Ingresa tu correo o teléfono");
                 
                 inputField.classList.add('hidden');
-                hint.classList.add('hidden'); // Ocultamos el hint al pasar a la clave
+                hint.classList.add('hidden');
                 passField.classList.remove('hidden');
                 loginPhase = 'password';
                 btn.innerText = "Entrar";
@@ -251,7 +249,7 @@
             } catch (e) { alert("Error con Google"); }
         };
 
-        // --- 3. TELÉFONO SMS (REGISTRO) ---
+        // --- 3. TELÉFONO SMS ---
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {'size': 'invisible'});
         document.getElementById('btnTelefono').onclick = () => showStep('phone');
 
