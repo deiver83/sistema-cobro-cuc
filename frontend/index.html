@@ -63,18 +63,14 @@
         .link-blue { color: #3b82f6; cursor: pointer; text-decoration: none; font-size: 0.85rem; font-weight: 500; }
         .link-blue:hover { text-decoration: underline; }
         .hidden { display: none !important; }
-
-        #phoneHint {
-            font-size: 0.75rem; color: #6b7280; margin-bottom: 10px;
-            text-align: left; padding-left: 5px; line-height: 1.2;
-        }
+        #phoneHint { font-size: 0.75rem; color: #6b7280; margin-bottom: 10px; text-align: left; padding-left: 5px; line-height: 1.2; }
         #phoneHint b { color: #3b82f6; }
     </style>
 </head>
 <body>
 
     <div class="landing-container">
-        <h1 style="margin-bottom: 30px;">Sistema de Cobros v1.0</h1>
+        <h1>Sistema de Cobros v1.0</h1>
         <button class="btn-main" onclick="openModal()">Iniciar Sesión</button>
     </div>
 
@@ -83,30 +79,20 @@
             <button class="close-btn" onclick="closeModal()">×</button>
             
             <div id="authStep1">
-                <h2>Bienvenido de nuevo</h2>
+                <h2>Bienvenido</h2>
                 <p>Gestiona tus cobros de manera profesional.</p>
-
                 <button id="btnGoogle" class="btn-social">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
                     Continuar con Google
                 </button>
-
                 <button id="btnTelefono" class="btn-social">
-                    <span style="font-size: 18px;">📱</span>
-                    Continuar con el teléfono
+                    <span>📱</span> Continuar con el teléfono
                 </button>
-
                 <div class="divider"><hr><span>o</span><hr></div>
-
-                <div id="phoneHint">
-                    ℹ️ Para entrar con teléfono usa el indicativo (ej: <b>+57</b>3000000000)
-                </div>
-
+                <div id="phoneHint">ℹ️ Usa el indicativo (ej: <b>+57</b>3000000000)</div>
                 <input type="text" id="quickIdentifier" placeholder="Correo o teléfono">
                 <input type="password" id="quickPass" class="hidden" placeholder="Introduce tu contraseña">
-                
                 <button id="btnMainAction" class="btn-black">Continuar</button>
-
                 <div style="margin-top: 20px;">
                     <a onclick="showStep('forgot')" class="link-blue">¿Olvidaste tu contraseña?</a>
                 </div>
@@ -114,32 +100,28 @@
 
             <div id="authStepForgot" class="hidden">
                 <h2>Recuperar acceso</h2>
-                <p>Enviaremos tu clave actual a tu bandeja de entrada.</p>
+                <p>Enviaremos tu clave a tu correo.</p>
                 <input type="email" id="forgotEmailInput" placeholder="Correo registrado">
                 <button id="btnSendForgot" class="btn-black">Enviar contraseña</button>
-                <div style="margin-top: 20px;">
-                    <a onclick="showStep('login')" class="link-blue">Volver al inicio</a>
-                </div>
+                <div style="margin-top: 20px;"><a onclick="showStep('login')" class="link-blue">Volver</a></div>
             </div>
 
             <div id="authStepPhone" class="hidden">
-                <h2 id="phoneHeader">Verifica tu seguridad</h2>
-                <p id="phoneSub">Configura tu acceso para continuar.</p>
+                <h2 id="phoneHeader">Verificación</h2>
+                <p id="phoneSub">Configura tu acceso.</p>
                 <div id="recaptcha-container"></div>
                 <input type="text" id="phoneInput" placeholder="+57 300 000 0000">
-                <input type="text" id="smsInput" class="hidden" placeholder="Código de 6 dígitos">
+                <input type="text" id="smsInput" class="hidden" placeholder="Código SMS">
                 <input type="password" id="passInput" class="hidden" placeholder="Crea tu contraseña">
                 <button id="btnPhoneAction" class="btn-black">Enviar SMS</button>
-                <div style="margin-top: 20px;">
-                    <a onclick="location.reload()" class="link-blue">Cancelar</a>
-                </div>
+                <div style="margin-top: 20px;"><a onclick="location.reload()" class="link-blue">Cancelar</a></div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC2Te-ZAbqQZvIts6FGUfg-ZqOycIP0RBQ",
@@ -153,174 +135,90 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // --- URLS ACTUALIZADAS CON TU NUEVO BACKEND ---
+        // URLS ACTUALIZADAS (Backend en Render)
         const API = "https://sistema-cobro-backend-gqse.onrender.com/api";
         const socket = io('https://sistema-cobro-backend-gqse.onrender.com');
 
         window.openModal = () => document.getElementById('authOverlay').classList.add('active');
-        window.closeModal = () => location.reload();
+        window.closeModal = () => document.getElementById('authOverlay').classList.remove('active');
 
         window.showStep = (step) => {
-            const steps = ['authStep1', 'authStepForgot', 'authStepPhone'];
-            steps.forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['authStep1', 'authStepForgot', 'authStepPhone'].forEach(s => document.getElementById(s).classList.add('hidden'));
             if(step === 'login') document.getElementById('authStep1').classList.remove('hidden');
             if(step === 'forgot') document.getElementById('authStepForgot').classList.remove('hidden');
             if(step === 'phone') document.getElementById('authStepPhone').classList.remove('hidden');
         };
 
-        let loginPhase = 'identifier';
-        let userIdentifier = '';
-
-        document.getElementById('btnMainAction').onclick = async () => {
-            const inputField = document.getElementById('quickIdentifier');
-            const passField = document.getElementById('quickPass');
-            const btn = document.getElementById('btnMainAction');
-            const hint = document.getElementById('phoneHint');
-
-            if (loginPhase === 'identifier') {
-                userIdentifier = inputField.value.trim();
-                if(!userIdentifier) return alert("Ingresa tu correo o teléfono");
-                
-                inputField.classList.add('hidden');
-                hint.classList.add('hidden');
-                passField.classList.remove('hidden');
-                loginPhase = 'password';
-                btn.innerText = "Entrar";
-            } else {
-                const password = passField.value;
-                try {
-                    const res = await fetch(`${API}/login`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ identifier: userIdentifier, password: password })
-                    });
-                    const data = await res.json();
-                    if(data.success) {
-                        localStorage.setItem('usuario', JSON.stringify(data.user));
-                        location.href = 'dashboard.html';
-                    } else { alert("❌ " + data.error); }
-                } catch (e) { alert("Error de servidor"); }
-            }
-        };
-
-        const provider = new GoogleAuthProvider();
-        document.getElementById('btnGoogle').onclick = async () => {
-            try {
-                const result = await signInWithPopup(auth, provider);
+        // --- MANEJO DE REDIRECCIÓN DE GOOGLE ---
+        getRedirectResult(auth).then(async (result) => {
+            if (result) {
                 const user = result.user;
                 const checkRes = await fetch(`${API}/check-user?email=${user.email}`);
                 const checkData = await checkRes.json();
-
                 if (checkData.exists) {
                     localStorage.setItem('usuario', JSON.stringify(checkData.user));
                     location.href = 'dashboard.html';
                 } else {
                     showStep('phone');
-                    document.getElementById('phoneHeader').innerText = "Crea tu contraseña";
-                    document.getElementById('phoneSub').innerText = "Hola " + user.displayName + ", asigna una clave para tu cuenta.";
+                    document.getElementById('phoneHeader').innerText = "Finalizar Registro";
                     document.getElementById('phoneInput').classList.add('hidden');
                     document.getElementById('passInput').classList.remove('hidden');
-                    
-                    const btnFinal = document.getElementById('btnPhoneAction');
-                    btnFinal.innerText = "Finalizar Registro";
-                    btnFinal.onclick = async () => {
+                    const btn = document.getElementById('btnPhoneAction');
+                    btn.innerText = "Crear Cuenta";
+                    btn.onclick = async () => {
                         const password = document.getElementById('passInput').value;
-                        if(password.length < 4) return alert("Mínimo 4 caracteres");
-                        
                         const regRes = await fetch(`${API}/register`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ 
-                                nombre: user.displayName, 
-                                email: user.email, 
-                                password: password, 
-                                telefono: user.phoneNumber || null 
-                            })
+                            body: JSON.stringify({ nombre: user.displayName, email: user.email, password: password })
                         });
                         if(regRes.ok) {
-                            const regData = await regRes.json();
-                            localStorage.setItem('usuario', JSON.stringify(regData.user));
+                            const d = await regRes.json();
+                            localStorage.setItem('usuario', JSON.stringify(d.user));
                             location.href = 'dashboard.html';
                         }
                     };
                 }
-            } catch (e) { alert("Error con Google"); }
-        };
+            }
+        }).catch(e => console.error("Error Google Redirect:", e));
 
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {'size': 'invisible'});
-        document.getElementById('btnTelefono').onclick = () => showStep('phone');
+        const provider = new GoogleAuthProvider();
+        document.getElementById('btnGoogle').onclick = () => signInWithRedirect(auth, provider);
 
-        let phoneFlow = 'send';
-        let verifiedPhone = '';
+        // --- LOGIN MANUAL ---
+        let loginPhase = 'identifier';
+        let userIdentifier = '';
+        document.getElementById('btnMainAction').onclick = async () => {
+            const input = document.getElementById('quickIdentifier');
+            const pass = document.getElementById('quickPass');
+            const btn = document.getElementById('btnMainAction');
 
-        document.getElementById('btnPhoneAction').onclick = async () => {
-            const btn = document.getElementById('btnPhoneAction');
-            if(phoneFlow === 'send') {
-                verifiedPhone = document.getElementById('phoneInput').value.trim();
-                if(!verifiedPhone) return alert("Ingresa tu número (+57...)");
-
-                try {
-                    window.confirmationResult = await signInWithPhoneNumber(auth, verifiedPhone, window.recaptchaVerifier);
-                    document.getElementById('phoneInput').classList.add('hidden');
-                    document.getElementById('smsInput').classList.remove('hidden');
-                    btn.innerText = "Verificar Código";
-                    phoneFlow = 'verify';
-                } catch (e) { alert("Error al enviar SMS. Revisa el formato (+57...)"); }
-            } else if(phoneFlow === 'verify') {
-                try {
-                    const code = document.getElementById('smsInput').value.trim();
-                    await window.confirmationResult.confirm(code);
-                    document.getElementById('smsInput').classList.add('hidden');
-                    document.getElementById('passInput').classList.remove('hidden');
-                    btn.innerText = "Crear Cuenta";
-                    document.getElementById('phoneHeader').innerText = "Crea tu contraseña";
-                    phoneFlow = 'final';
-                } catch (e) { alert("Código SMS incorrecto"); }
+            if (loginPhase === 'identifier') {
+                userIdentifier = input.value.trim();
+                if(!userIdentifier) return alert("Ingresa datos");
+                input.classList.add('hidden');
+                pass.classList.remove('hidden');
+                loginPhase = 'password';
+                btn.innerText = "Entrar";
             } else {
-                const password = document.getElementById('passInput').value;
-                if(password.length < 4) return alert("Mínimo 4 caracteres");
-
                 try {
-                    const regRes = await fetch(`${API}/register`, {
+                    const res = await fetch(`${API}/login`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ 
-                            nombre: "Usuario Teléfono", 
-                            email: verifiedPhone, 
-                            password: password, 
-                            telefono: verifiedPhone 
-                        })
+                        body: JSON.stringify({ identifier: userIdentifier, password: pass.value })
                     });
-
-                    if(regRes.ok) {
-                        const regData = await regRes.json();
-                        localStorage.setItem('usuario', JSON.stringify(regData.user));
-                        alert("✅ ¡Bienvenido!");
+                    const data = await res.json();
+                    if(data.success) {
+                        localStorage.setItem('usuario', JSON.stringify(data.user));
                         location.href = 'dashboard.html';
-                    } else {
-                        const err = await regRes.json();
-                        alert("❌ " + err.error);
-                    }
-                } catch(e) { alert("Error de servidor"); }
+                    } else { alert(data.error); }
+                } catch (e) { alert("Error servidor"); }
             }
         };
 
-        document.getElementById('btnSendForgot').onclick = async () => {
-            const email = document.getElementById('forgotEmailInput').value;
-            const btn = document.getElementById('btnSendForgot');
-            btn.innerText = "Enviando...";
-            btn.disabled = true;
-            try {
-                const res = await fetch(`${API}/forgot-password`, {
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email: email })
-                });
-                if(res.ok) alert("✅ Revisa tu correo.");
-                else alert("❌ Correo no encontrado.");
-            } catch (e) { alert("Error de conexión"); }
-            finally { btn.innerText = "Enviar contraseña"; btn.disabled = false; }
-        };
+        // --- SMS ---
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {'size': 'invisible'});
+        document.getElementById('btnTelefono').onclick = () => showStep('phone');
     </script>
 </body>
 </html>
